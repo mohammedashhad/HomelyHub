@@ -10,7 +10,10 @@ import { tripRouter } from "./routes/tripRouter.js";
 
 dotenv.config()
 const app= express();
-const allowedOrigin = process.env.ORIGIN_ACCESS_URL?.replace(/\/+$/, "");
+const allowedOrigins = (process.env.ORIGIN_ACCESS_URL || "")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
 
 //for express.json
 app.use(express.json({limit:"100mb"}))
@@ -22,7 +25,13 @@ app.use(express.urlencoded({limit:"100mb",extended:true}))
 app.use(cookieParser())
 
 app.use(cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin.replace(/\/+$/, ""))) {
+            return callback(null, true);
+        }
+
+        return callback(new Error("Origin is not allowed by CORS"));
+    },
     credentials:true
 }))
 
